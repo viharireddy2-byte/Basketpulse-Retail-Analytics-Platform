@@ -1,0 +1,8 @@
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.DS_Store
+benchmarks/results/*.json
+!benchmarks/results/.gitkeep
