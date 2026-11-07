@@ -1,8 +1,9 @@
-# Optional production operations
+# Pipeline operations
 
-The original loader, full build, generator, SQL, LookML, and dashboards are unchanged.
-The `operations` package adds a separate command path using the same fact SELECT.
-This is implemented code with local tests, **not a claim of production deployment**.
+The `operations` package provides source validation, partition replay, execution
+controls, and forecast monitoring alongside the full-build scripts. Both command
+paths share the fact transformation. Cloud integration requires a configured GCP
+environment; live deployment validation remains pending.
 
 ## Prerequisites and first run
 
@@ -66,10 +67,11 @@ cloud SDK or credentials and performs no warehouse operations.
 
 Fact publication is atomic; **the entire mart/model refresh is not atomic**. A later
 failure may leave derived tables on different generations. Rerun refresh after fixing
-the cause. For a real production release, build versioned datasets and switch consumers
+the cause. For coordinated publication, build versioned datasets and switch consumers
 only after all validations pass. The original Looker cache watermarks do not detect
 historical corrections reliably; invalidate caches after backfills or wait for their
-maximum age. Do not advertise coordinated publication or cache invalidation as delivered.
+maximum age. Coordinated publication and backfill-triggered cache invalidation are
+not automated.
 
 ## Forecast monitoring
 
@@ -87,7 +89,7 @@ count and missing-actual count per issue day/store/category. WAPE is NULL for ze
 aggregate actual demand; missing series-days are not assumed to be zero. Evaluation
 excludes the current UTC day; only run against complete actuals. Metrics compare to
 currently published actuals, so backfills can revise metrics. This is prospective
-monitoring, not rolling-origin backtesting or a claim of accuracy. Synthetic historical
+monitoring; rolling-origin backtesting and model accuracy results are not included. Synthetic historical
 fixtures will not produce prospective observations until data dates move forward.
 
 ## Verification and rollout
@@ -109,5 +111,19 @@ Looker should have read-only data access. Prefer short-lived workload identity o
 committed keys. No row-level store authorization is provided: deploy Looker access
 filters/user attributes or warehouse row policies before sharing restricted data.
 Configure your scheduler for one writer and send failed-run events to your alerting
-system. There is no deployed scheduler, alert sink, Terraform state, or live cloud
-validation bundled with this archive.
+system. Scheduling, alert routing, and infrastructure provisioning require deployment
+configuration. Live cloud validation remains pending.
+
+## Metric and dashboard limitations
+
+| Area | Current behavior | Validation or correction needed |
+|---|---|---|
+| Store average basket value | Store peer features divide sales by category-level transaction counts; multi-category baskets can be counted more than once. | Calculate the feature at basket grain and test multi-category fixtures. |
+| Weekly sales | The feature divides annual-window sales by `365 / 7`, including partial-history datasets. | Define the intended observation window before changing normalization. |
+| Prior-year date boundaries | The period bucket uses an inclusive prior-year end while the explore uses an exclusive upper bound. | Validate one-day, month-end, and leap-year windows against known totals. |
+| Segment labels | Labels follow average monetary ranking; tied ranks can skip labels and low spend alone does not establish lapsing behavior. | Validate centroid recency and frequency and define deterministic labels. |
+| Dashboard defaults | Relative date filters and a default store name may not match the generated dataset. | Set filters to available dates and stores before checking dashboard totals. |
+| Cache refresh | Maximum-date and calendar-week triggers do not detect every backfill or failed ML refresh. | Invalidate caches after corrections and verify refresh completion. |
+
+These limitations apply to the existing metric definitions. Source-quality gates
+and transactional fact replay do not correct semantic-layer calculations.

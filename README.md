@@ -150,7 +150,7 @@ MIT. See [LICENSE](LICENSE).
 The additional `operations` package supplies source-quality assertions, transactional
 partition replay with reconciliation, per-query byte limits, submission retry recovery,
 structured job logs, and prospective forecast history/evaluation (MAE, WAPE, coverage).
-Existing commands and dashboard behavior are preserved. See [the operations guide](docs/OPERATIONS.md)
+See [the operations guide](docs/OPERATIONS.md)
 for source contracts, recovery, concurrency, and publication limitations.
 
 ```bash
@@ -158,10 +158,14 @@ make ops-check PROJECT=my-project START_DATE=2026-06-01 END_DATE=2026-06-30
 make ops-refresh PROJECT=my-project START_DATE=2026-06-01 END_DATE=2026-06-30
 ```
 
-Local verification: **44 tests passed; one credential-dependent cloud test skipped**
-on this revision. The optional manually triggered `cloud-integration.yml` workflow
-uses workload identity and an isolated project; it has not been executed here.
-No live BigQuery, BQML, or Looker deployment is claimed.
+Verification commands: `make test lint`. The [CI workflow](https://github.com/viharireddy2-byte/Basketpulse---Retail-Analytics-Platform/actions/workflows/ci.yml)
+runs local tests, LookML static checks, and a generator smoke test. See its run history
+for current results.
 
-Read [the hiring-manager review](docs/HIRING_REVIEW.md) for the strict assessment
-and outstanding production release requirements.
+The [BigQuery integration workflow](.github/workflows/cloud-integration.yml) is
+manually triggered and requires a configured workload identity provider, service
+account, and isolated test project. Live BigQuery, BQML, and Looker validation
+remain pending.
+
+See [known metric and dashboard limitations](docs/OPERATIONS.md#metric-and-dashboard-limitations)
+for calculation caveats and validation requirements.
